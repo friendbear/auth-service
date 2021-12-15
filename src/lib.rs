@@ -1,0 +1,6 @@
+extern crate diesel;
+// ...
+use diesel::prelude::*;
+// ...
+//mod schema;
+//mod models;

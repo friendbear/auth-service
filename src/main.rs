@@ -14,12 +14,14 @@ async fn main() -> std::io::Result<()> {
     use actix_files::Files;
     use actix_session::CookieSession;
     use actix_web::{middleware, web, App, HttpServer, http::header};
+    use actix_identity::{CookieIdentityPolicy, IdentityService};
     use diesel::{
         prelude::*,
         r2d2::{self, ConnectionManager}
     };
 
-    std::env::set_var("RUST_LOG", "actix_server=info, actix_web=info");
+    std::env::set_var("RUST_LOG",
+        "actix_server=info, actix_web=info, simple-auth-server=debug");
     env_logger::init();
 
     // create a database connection pool
@@ -37,16 +39,35 @@ async fn main() -> std::io::Result<()> {
             // Enable sessions
             .wrap(
                 CookieSession::signed(&[0; 32])
-                    .domain(vars::domain_url().as_str())
+                    .domain(vars::domain().as_str())
+                    .max_age(86400)
                     .name("auth")
-                    .secure(false))
+                    .secure(false),
+                )
             .wrap(
-                Cors::new()
+                Cors::default()
                     .allowed_origin("*")
                     .allowed_methods(vec!["GET", "POST", "DELETE"])
                     .max_age(3600)
-                    .finish())
-            .service(Files::new("/assets", "./templates/assets"))
+            )
+            .service(
+                web::scope("/api")
+                    .service(
+                        web::resource("/invitation")
+                            .route(web::post().to(invitation_handler::postinvitation)),
+                    )
+                    .service(
+                        web::resource("/register/{invitation_id}")
+                            .route(web::post().to(invitation_handler::register_user)),
+                    )
+                    .service(
+                        web::resource("/auth")
+                            .route(web::post().to(auth_handler::login))
+                            .route(web::delete().to(auth_handler::logout))
+                            .route(web::get().to(auth_handler::get_me)),
+                    )
+                )
+//                Files::new("/assets", "./templates/assets"))
     })
     .bind(format!("{}:{}", vars::domain(), vars::port()))?
     .run()
