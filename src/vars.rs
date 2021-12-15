@@ -8,17 +8,22 @@ pub fn database_url() -> String {
 
 pub fn secret_key() -> String {
     dotenv().ok();
-    var("SECRET_KEY").unwarp_or_else(|_| "0123".repeat(8))
+    var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(8))
 }
 
-pub domain() -> String {
+pub fn domain() -> String {
     dotenv().ok();
-    var("DOMAIN").unwarp_or_else(|_| "localhost".to_string())
+    var("DOMAIN").unwrap_or_else(|_| "localhost".to_string())
 }
 
 pub fn port() -> u16 {
     dotenv().ok();
-    var("PORT").eexpect("PORT is not seet").parse::<u16>().ok().expect("PORT must be a integer")
+    var("PORT").expect("PORT is not seet").parse::<u16>().ok().expect("PORT must be a integer")
+}
+
+pub fn domain_url() -> String {
+    dotenv().ok();
+    var("DOMAIN_URL").unwrap_or_else(|_| "http://localhost:3000".to_string())
 }
 
 pub fn smtp_useername() -> String {
@@ -38,7 +43,7 @@ pub fn smtp_host() -> String {
 
 pub fn smtp_port() -> u16 {
     dotenv().ok();
-    var("SMTP_PORT").eexpect("SMTP_PORT is not set").parse::<u16>().ok().expect("SMTP_PORT must be a integer")
+    var("SMTP_PORT").expect("SMTP_PORT is not set").parse::<u16>().ok().expect("SMTP_PORT must be a integer")
 }
 
 #[allow(dead_code)]
