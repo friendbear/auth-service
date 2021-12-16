@@ -1,6 +1,9 @@
-use super::schema::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use serde::{Deserialize, Serialize};
+
+//use super::schema::users;
+//use super::schema::invitations;
+use super::schema::*;   // todo: ❄
 
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -11,6 +14,13 @@ pub struct User {
     pub email: String,
     pub hash: String,
     pub created_at: chrono::NaiveDateTime,
+}
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[table_name = "invitations"]
+pub struct Invitation {
+    pub id: uuid::Uuid,
+    pub email: String,
+    pub expires_at: chrono::NaiveDateTime,
 }
 
 impl User {
@@ -23,13 +33,6 @@ impl User {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
-#[table_name = "invitations"]
-pub struct Invitation {
-    pub id: uuid::Uuid,
-    pub email: String,
-    pub expires_at: chrono::NaiveDateTime,
-}
 
 // any type that implements Into<String> can be used to create Invitation
 impl<T> From<T> for Invitation

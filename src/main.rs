@@ -1,20 +1,18 @@
 #[macro_use]
 extern crate diesel;
 extern crate serde_json;
-extern crate lettre;
-extern crate native_tls;
 
 mod models;
 mod vars;
+mod invitation_handler;
+mod utils;
+mod errors;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
 
-    use actix_cors::Cors;
-    use actix_files::Files;
-    use actix_session::CookieSession;
-    use actix_web::{middleware, web, App, HttpServer, http::header};
     use actix_identity::{CookieIdentityPolicy, IdentityService};
+    use actix_web::{middleware, web, App, HttpServer};
     use diesel::{
         prelude::*,
         r2d2::{self, ConnectionManager}
@@ -36,38 +34,40 @@ async fn main() -> std::io::Result<()> {
             .data(pool.clone())
             // enable logger
             .wrap(middleware::Logger::default())
-            // Enable sessions
-            .wrap(
-                CookieSession::signed(&[0; 32])
-                    .domain(vars::domain().as_str())
-                    .max_age(86400)
+            .wrap(IdentityService::new(
+                CookieIdentityPolicy::new(utils::SECRET_KEY.as_bytes())
                     .name("auth")
-                    .secure(false),
-                )
-            .wrap(
-                Cors::default()
-                    .allowed_origin("*")
-                    .allowed_methods(vec!["GET", "POST", "DELETE"])
-                    .max_age(3600)
-            )
+                    .path("/")
+                    .domain(vars::domain().as_str())
+                    .max_age(86400) // one day in seconds
+                    .secure(false), // this can only be true if you have https
+            ))
+            // limit the maximum amount of data that server will accept
+            .data(web::JsonConfig::default().limit(4096))
+            // .wrap(
+            //     Cors::default()
+            //         .allowed_origin("*")
+            //         .allowed_methods(vec!["GET", "POST", "DELETE"])
+            //         .max_age(3600)
+            // )
+            // everything under '/api/' route
             .service(
                 web::scope("/api")
-                    .service(
-                        web::resource("/invitation")
-                            .route(web::post().to(invitation_handler::postinvitation)),
-                    )
-                    // .service(
-                    //     web::resource("/register/{invitation_id}")
-                    //         .route(web::post().to(invitation_handler::register_user)),
-                    // )
-                    // .service(
-                    //     web::resource("/auth")
-                    //         .route(web::post().to(auth_handler::login))
-                    //         .route(web::delete().to(auth_handler::logout))
-                    //         .route(web::get().to(auth_handler::get_me)),
-                    // )
+                .service(
+                    web::resource("/invitation")
+                        .route(web::post().to(invitation_handler::post_invitation)),
                 )
-//                Files::new("/assets", "./templates/assets"))
+                // .service(
+                //     web::resource("/register/{invitation_id}")
+                //         .route(web::post().to(invitation_handler::register_user)),
+                // )
+                // .service(
+                //     web::resource("/auth")
+                //         .route(web::post().to(auth_handler::login))
+                //         .route(web::delete().to(auth_handler::logout))
+                //         .route(web::get().to(auth_handler::get_me)),
+                // )
+            )
     })
     .bind(format!("{}:{}", vars::domain(), vars::port()))?
     .run()

@@ -6,8 +6,8 @@ use uuid::Error as ParseError;
 
 #[derive(Debug, Display)]
 pub enum ServiceError {
-    #[display(fmt = "Internal Server Error: {}", _0)]
-    InternalServerError(String),
+    #[display(fmt = "Internal Server Error")]
+    InternalServerError,
 
     #[display(fmt = "Bad Request: {}", _0)]
     BadRequest(String),
@@ -19,7 +19,7 @@ pub enum ServiceError {
 impl ResponseError for ServiceError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            ServiceError::InternalServerError(message) => {
+            ServiceError::InternalServerError => {
                 HttpResponse::InternalServerError().json("Internal Server Error, Please try later")
             }
             ServiceError::BadRequest(message) => HttpResponse::BadRequest().json(message),
@@ -28,14 +28,16 @@ impl ResponseError for ServiceError {
     }
 }
 
-impl From<ParseError> for SeerviceError {
+impl From<ParseError> for ServiceError {
     fn from(_: ParseError) -> ServiceError {
         ServiceError::BadRequest("Invalid UUID".into())
     }
 }
 
-impl From<DBError> for SeerviceError {
+impl From<DBError> for ServiceError {
     fn from(error: DBError) -> ServiceError {
+        // Right now we just care about UniqueViolation from diesel
+        // But this would be helpful to easily map errors as our app grows
         match error {
             DBError::DatabaseError(kind, info) => {
                 if let DatabaseErrorKind::UniqueViolation = kind {
