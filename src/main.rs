@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate diesel;
 extern crate serde_json;
 extern crate lettre;
@@ -6,7 +7,6 @@ extern crate native_tls;
 mod models;
 mod vars;
 
-#[macro_use]
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
 
@@ -56,16 +56,16 @@ async fn main() -> std::io::Result<()> {
                         web::resource("/invitation")
                             .route(web::post().to(invitation_handler::postinvitation)),
                     )
-                    .service(
-                        web::resource("/register/{invitation_id}")
-                            .route(web::post().to(invitation_handler::register_user)),
-                    )
-                    .service(
-                        web::resource("/auth")
-                            .route(web::post().to(auth_handler::login))
-                            .route(web::delete().to(auth_handler::logout))
-                            .route(web::get().to(auth_handler::get_me)),
-                    )
+                    // .service(
+                    //     web::resource("/register/{invitation_id}")
+                    //         .route(web::post().to(invitation_handler::register_user)),
+                    // )
+                    // .service(
+                    //     web::resource("/auth")
+                    //         .route(web::post().to(auth_handler::login))
+                    //         .route(web::delete().to(auth_handler::logout))
+                    //         .route(web::get().to(auth_handler::get_me)),
+                    // )
                 )
 //                Files::new("/assets", "./templates/assets"))
     })

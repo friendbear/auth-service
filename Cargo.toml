@@ -39,4 +39,4 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 yarte = "0.15.6"
 
 [build-dependencies]
-yarte = { version = "0.7", features = ["with-actix-web"]  }
+#yarte = { version = "0.15.6", features = ["with-actix-web"]  }
