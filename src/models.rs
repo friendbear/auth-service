@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 //use super::schema::users;
 //use super::schema::invitations;
-use super::schema::*;   // todo: ❄
+use super::schema::*;
 
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;

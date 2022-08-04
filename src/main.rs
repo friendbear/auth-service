@@ -7,31 +7,23 @@ mod vars;
 mod invitation_handler;
 mod utils;
 mod errors;
+mod db;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
 
     use actix_identity::{CookieIdentityPolicy, IdentityService};
     use actix_web::{middleware, web, App, HttpServer};
-    use diesel::{
-        prelude::*,
-        r2d2::{self, ConnectionManager}
-    };
 
     std::env::set_var("RUST_LOG",
         "actix_server=info, actix_web=info, simple-auth-server=debug");
     env_logger::init();
 
-    // create a database connection pool
-    let manager = ConnectionManager::<PgConnection>::new(vars::database_url());
-    let pool: models::Pool = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Faild to create a database connection pool.");
 
     // Start http server
     HttpServer::new(move || {
         App::new()
-            .data(pool.clone())
+            .data(db::get_connection_pool())
             // enable logger
             .wrap(middleware::Logger::default())
             .wrap(IdentityService::new(
