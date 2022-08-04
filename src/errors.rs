@@ -28,13 +28,13 @@ impl ResponseError for ServiceError {
     }
 }
 
-impl From<ParseError> for SeerviceError {
+impl From<ParseError> for ServiceError {
     fn from(_: ParseError) -> ServiceError {
         ServiceError::BadRequest("Invalid UUID".into())
     }
 }
 
-impl From<DBError> for SeerviceError {
+impl From<DBError> for ServiceError {
     fn from(error: DBError) -> ServiceError {
         match error {
             DBError::DatabaseError(kind, info) => {
