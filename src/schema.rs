@@ -1,3 +1,4 @@
+
 table! {
     invitations (id) {
         id -> Uuid,

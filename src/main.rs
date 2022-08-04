@@ -4,21 +4,21 @@ extern crate serde_json;
 extern crate lettre;
 extern crate native_tls;
 
+use actix_identity::{CookieIdentityPolicy, IdentityService};
+use actix_web::{middleware, web, App, HttpServer};
+use diesel::prelude::*;
+use diesel::r2d2::{self, ConnectionManager};
+
+
 mod models;
+mod schema;
 mod vars;
+mod invitation_handler;
+mod utils;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
 
-    use actix_cors::Cors;
-    use actix_files::Files;
-    use actix_session::CookieSession;
-    use actix_web::{middleware, web, App, HttpServer, http::header};
-    use actix_identity::{CookieIdentityPolicy, IdentityService};
-    use diesel::{
-        prelude::*,
-        r2d2::{self, ConnectionManager}
-    };
 
     std::env::set_var("RUST_LOG",
         "actix_server=info, actix_web=info, simple-auth-server=debug");
@@ -33,17 +33,19 @@ async fn main() -> std::io::Result<()> {
     // Start http server
     HttpServer::new(move || {
         App::new()
-            .data(pool.clone())
+            .app_data(web::Data::new(pool.clone()))
             // enable logger
             .wrap(middleware::Logger::default())
             // Enable sessions
-            .wrap(
-                CookieSession::signed(&[0; 32])
-                    .domain(vars::domain().as_str())
-                    .max_age(86400)
+            .wrap(IdentityService::new(
+                CookieIdentityPolicy::new(utils::SECRET_KEY.as_bytes())
                     .name("auth")
+                    .path("/")
+                    .domain(vars::domain().as_str())
+                    .max_age()
                     .secure(false),
                 )
+            )
             .wrap(
                 Cors::default()
                     .allowed_origin("*")
@@ -54,12 +56,16 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .service(
                         web::resource("/invitation")
-                            .route(web::post().to(invitation_handler::postinvitation)),
+                            .route(web::post().to(invitation_handler::post_invitation)),
                     )
-                    // .service(
-                    //     web::resource("/register/{invitation_id}")
-                    //         .route(web::post().to(invitation_handler::register_user)),
-                    // )
+                    .service(
+                        web::resource("/register/{invitation_id}")
+                            .route(web::post().to_async(register_handler::register_user)),
+                    ),
+                    //.service(
+                    //    web::resource("/register/{invitation_id}")
+                    //        .route(web::post().to(invitation_handler::register_user)),
+                    //)
                     // .service(
                     //     web::resource("/auth")
                     //         .route(web::post().to(auth_handler::login))

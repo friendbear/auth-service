@@ -1,9 +1,10 @@
-use super::schema::*;
-use diesel::{r2d2::ConnectionManager, PgConnection};
-use serde::{Deserialize, Serialize};
 
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
+
+use diesel::{r2d2::ConnectionManager, PgConnection};
+use serde::{Deserialize, Serialize};
+use schema::*;
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
 #[table_name = "users"]
@@ -42,5 +43,16 @@ where
             email: email.into(),
             expires_at: chrono::Local::now().naive_local() + chrono::Duration::hours(24),
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SlimUser {
+    pub email: String,
+}
+
+impl From<User> for SlimUser {
+    fn from(user: User) -> Self {
+        SlimUser { email: user.email }
     }
 }
