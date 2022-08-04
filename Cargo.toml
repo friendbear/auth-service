@@ -17,12 +17,12 @@ edition = "2021"
 # dotenv for reading variables from .env files.
 # lettre for sending e-mails.
 # argonautica for password hashing.
-actix-files = "0.5.0"
+actix-files = "0.6.2"
 actix-rt = "2.5.0"
-actix-session = "0.4.1"
-actix-identity = "0.3"
-actix-web = "3.3.2"
-actix-cors = "0.5.4"
+actix-session = "0.7.1"
+actix-identity = "0.5.2"
+actix-web = "4.1.0"
+actix-cors = "0.6.1"
 argonautica = "0.2.0"
 chrono = { version = "0.4.11", features = ["serde"] }
 derive_more = "0.99.5"
@@ -34,7 +34,7 @@ native-tls = "0.2.4"
 r2d2 = "0.8.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "0.8", features = ["serde", "v4"] }
+uuid = { version = "1.1.2", features = ["serde", "v4"] }
 #yarte = { version = "0.15.6", features = ["with-actix-web"]  }
 yarte = "0.15.6"
 
