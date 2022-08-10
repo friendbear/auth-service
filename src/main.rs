@@ -1,34 +1,36 @@
 #[macro_use]
 extern crate diesel;
-extern crate serde_json;
-extern crate lettre;
-extern crate native_tls;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{middleware, web, App, HttpServer};
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 
-
-mod models;
-mod schema;
-mod vars;
+mod auth_handler;
+mod email_service;
+mod errors;
 mod invitation_handler;
+mod models;
+mod register_handler;
+mod schema;
 mod utils;
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
-
-    std::env::set_var("RUST_LOG",
-        "actix_server=info, actix_web=info, simple-auth-server=debug");
+    dotenv::dotenv().ok();
+    std::env::set_var(
+        "RUST_LOG",
+        "simple-auth-server=debug,actix_web=info,actix_server=info",
+    );
     env_logger::init();
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    // create a database connection pool
-    let manager = ConnectionManager::<PgConnection>::new(vars::database_url());
+    // create db connection pool
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool: models::Pool = r2d2::Pool::builder()
         .build(manager)
-        .expect("Faild to create a database connection pool.");
+        .expect("Failed to create pool.");
+    let domain: String = std::env::var("DOMAIN").unwrap_or_else(|_| "localhost".to_string());
 
     // Start http server
     HttpServer::new(move || {
@@ -36,22 +38,16 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             // enable logger
             .wrap(middleware::Logger::default())
-            // Enable sessions
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(utils::SECRET_KEY.as_bytes())
                     .name("auth")
                     .path("/")
-                    .domain(vars::domain().as_str())
-                    .max_age()
-                    .secure(false),
-                )
-            )
-            .wrap(
-                Cors::default()
-                    .allowed_origin("*")
-                    .allowed_methods(vec!["GET", "POST", "DELETE"])
-                    .max_age(3600)
-            )
+                    .domain(domain.as_str())
+                    .max_age(time::Duration::days(1)) // one day in seconds
+                    .secure(false), // this can only be true if you have https
+            ))
+            .app_data(web::JsonConfig::default().limit(4096))
+            // everything under '/api/' route
             .service(
                 web::scope("/api")
                     .service(
@@ -60,22 +56,17 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/register/{invitation_id}")
-                            .route(web::post().to_async(register_handler::register_user)),
+                            .route(web::post().to(register_handler::register_user)),
+                    )
+                    .service(
+                        web::resource("/auth")
+                            .route(web::post().to(auth_handler::login))
+                            .route(web::delete().to(auth_handler::logout))
+                            .route(web::get().to(auth_handler::get_me)),
                     ),
-                    //.service(
-                    //    web::resource("/register/{invitation_id}")
-                    //        .route(web::post().to(invitation_handler::register_user)),
-                    //)
-                    // .service(
-                    //     web::resource("/auth")
-                    //         .route(web::post().to(auth_handler::login))
-                    //         .route(web::delete().to(auth_handler::logout))
-                    //         .route(web::get().to(auth_handler::get_me)),
-                    // )
-                )
-//                Files::new("/assets", "./templates/assets"))
+            )
     })
-    .bind(format!("{}:{}", vars::domain(), vars::port()))?
+    .bind("127.0.0.1:8080")?
     .run()
     .await
 }

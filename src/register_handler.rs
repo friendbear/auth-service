@@ -1,4 +1,3 @@
-// register_handler.rs
 use actix_web::{web, HttpResponse};
 use diesel::prelude::*;
 use serde::Deserialize;
