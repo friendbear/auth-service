@@ -16,11 +16,11 @@ sequenceDiagram
     sv ->>+ db : select発行
     db -->>- sv : select結果
     sv -->>- cl : データ取得要求結果
-
     alt 正常終了
-        Note over cl : invitationメール送信
+        sv -->>- ms : 招待メール送信
+        Note over cl : invitation ok!
     else エラー
-        Note over cl : すでに登録済み
+        Note over cl : alredy invitation
     end
 ```
 
