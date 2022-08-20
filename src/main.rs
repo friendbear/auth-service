@@ -2,6 +2,7 @@
 extern crate diesel;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
+use actix_web::middleware::Logger;
 use actix_web::{middleware, web, App, HttpServer};
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
@@ -24,7 +25,8 @@ async fn main() -> std::io::Result<()> {
     );
     env_logger::init();
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
+    let bind_port = std::env::var("PORT").unwrap_or("3000".to_owned());
+    let addr = format!("{}:{}", "127.0.0.1", bind_port);
     // create db connection pool
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool: models::Pool = r2d2::Pool::builder()
@@ -32,6 +34,7 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
     let domain: String = std::env::var("DOMAIN").unwrap_or_else(|_| "localhost".to_string());
 
+    println!("Auth server starting... {}", addr);
     // Start http server
     HttpServer::new(move || {
         App::new()
@@ -66,7 +69,7 @@ async fn main() -> std::io::Result<()> {
                     ),
             )
     })
-    .bind("127.0.0.1:8080")?
+    .bind(addr)?
     .run()
     .await
 }
