@@ -16,8 +16,8 @@ sequenceDiagram
     sv ->>+ db : select発行
     db -->>- sv : select結果
     sv -->>- cl : データ取得要求結果
+    sv -->>+ ms : 招待メール送信
     alt 正常終了
-        sv -->>- ms : 招待メール送信
         Note over cl : invitation ok!
     else エラー
         Note over cl : alredy invitation
